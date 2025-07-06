@@ -36,23 +36,23 @@ class UserLoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data['email']
-        password = serializer.validated_data['password']
+        email = serializer.validated_data["email"]
+        password = serializer.validated_data["password"]
 
-        user = authenticate(request, email=email, password=password)
+        try:
+            user = User.objects.get(email=email)
+            if not user.check_password(password):
+                raise Exception("Invalid credentials")
+        except Exception:
+            return Response({"error": "Invalid credentials"}, status=400)
 
-        if user is not None:
+        refresh = RefreshToken.for_user(user)
 
-            refresh = RefreshToken.for_user(user)
-
-            return Response({
-                "full_name": user.full_name,
-                "refresh": str(refresh),
-                "access": str(refresh.access_token)
-            })
-        
-        return Response({"error": "Invalid credentials"}, status=400)
-
+        return Response({
+            "full_name": user.full_name,
+            "refresh": str(refresh),
+            "access": str(refresh.access_token)
+        })
     
 
 class UserAccountView(APIView):
